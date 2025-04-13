@@ -17,7 +17,7 @@ def inst_login():
     session_id = str(uuid.uuid4())
     user_dir = os.path.join(user_data_dir, session_id)
     os.makedirs(user_dir, exist_ok=True)
-    loader = instaloader.Instaloader(dirname_patern=user_dir, download_pictures=False, download_videos=False, compress_json=False)
+    loader = instaloader.Instaloader(dirname_pattern=user_dir, download_pictures=False, download_videos=False, compress_json=False)
     
     try:
         loader.login(username, password)
