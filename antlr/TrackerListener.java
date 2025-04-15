@@ -6,8 +6,7 @@ public class TrackerListener extends SocialMediaBaseListener {
     int totalFollowing = 0;
     int totalLikes = 0;
     int totalComments = 0;
-    int totalShares = 0;
-    int totalSaves = 0;
+
 
     @Override
     public void enterPair(SocialMediaParser.PairContext ctx) {
@@ -30,12 +29,6 @@ public class TrackerListener extends SocialMediaBaseListener {
                 case "comments":
                     totalComments = num;
                     break;
-                case "shares":
-                    totalShares = num;
-                    break;
-                case "saves":
-                    totalSaves = num;
-                    break;
             }
         } catch (NumberFormatException ignored) {}
     }
@@ -46,7 +39,5 @@ public class TrackerListener extends SocialMediaBaseListener {
         System.out.println("Total Following: " + totalFollowing);
         System.out.println("Total Likes on Posts: " + totalLikes);
         System.out.println("Total Comments: " + totalComments);
-        System.out.println("Total Shares: " + totalShares);
-        System.out.println("Total Saves: " + totalSaves);
     }
 }

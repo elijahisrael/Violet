@@ -9,8 +9,6 @@ public class Main {
         int following = 0;
         int likes = 0;
         int comments = 0;
-        int shares = 0;
-        int saves = 0;
 
         @Override
         public void enterPair(SocialMediaParser.PairContext ctx) {
@@ -22,8 +20,6 @@ public class Main {
                 case "following": following = Integer.parseInt(val); break;
                 case "likes": likes = Integer.parseInt(val); break;
                 case "comments": comments = Integer.parseInt(val); break;
-                case "shares": shares = Integer.parseInt(val); break;
-                case "saves": saves = Integer.parseInt(val); break;
             }
         }
 
@@ -33,8 +29,6 @@ public class Main {
             System.out.println("Total Following: " + following);
             System.out.println("Total Likes on Posts: " + likes);
             System.out.println("Total Comments: " + comments);
-            System.out.println("Total Shares: " + shares);
-            System.out.println("Total Saves: " + saves);
         }
     }
 
