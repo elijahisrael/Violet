@@ -135,12 +135,17 @@ def fetch_and_process(loader, username, session_id):
         "followers": profile.followers,
         "following": profile.followees,
         "likes": 0,
-        "comments": 0
+        "comments": 0,
+        "post_dates": [],
+        "captions": []
     }
 
     for post in profile.get_posts():
         result["likes"] += post.likes
         result["comments"] += post.comments
+        result["post_dates"].append(int(post.date_utc.timestamp()))
+        if post.caption:
+            result["captions"].append(post.caption)
 
         time.sleep(random.uniform(0.5, 1.5))
 
