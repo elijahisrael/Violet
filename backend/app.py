@@ -5,6 +5,8 @@ from flask import Flask, request, jsonify
 import instaloader, os, json, uuid
 from flask_cors import CORS
 import tempfile
+from datetime import datetime
+from collections import Counter, defaultdict
 
 app = Flask(__name__)
 CORS(app)
@@ -50,7 +52,7 @@ def inst_login():
 
                 print("2FA Login successful. Fetching data...")
                 time.sleep(30)
-                fetch_and_process(loader, username, session_id)
+                fetch_and_process(loader, username)
 
                 if os.path.exists(session_file_path):
                     os.remove(session_file_path)
@@ -101,10 +103,9 @@ def inst_login():
         
         loader.save_session_to_file(session_file_path)
 
-        print("Login successful. Fetching and processing data... Please wait 30 seconds.")
-        time.sleep(30)
+        print("Login successful. Fetching and processing data...")
         try:
-            fetch_and_process(loader, username, session_id)
+            fetch_and_process(loader, username)
         except Exception as e:
             print("Fetch or processing failed:", e)
             return jsonify({"error": "Instagram temporarily blocked data access. Please try again later."}), 403
@@ -124,11 +125,11 @@ def get_summary(session_id):
             return jsonify(json.load(f))
     return jsonify({"error": "Summary not found."}), 404
         
-def fetch_and_process(loader, username, session_id):
-    from datetime import datetime
+def fetch_and_process(loader, username):
 
 
     print("Fetching Instagram post metadata without saving individual files...")
+    time.sleep(15)
     profile = instaloader.Profile.from_username(loader.context, username)
 
     result = {
@@ -136,19 +137,81 @@ def fetch_and_process(loader, username, session_id):
         "following": profile.followees,
         "likes": 0,
         "comments": 0,
-        "post_dates": [],
-        "captions": []
+        "postDates": [],
+        "inactiveFollowers": 0,
+        "posts": 0,
+        "averageLikes": 0.0,
+        "averageComments": 0.0,
+        "engagementRate": 0.0,
+        "engagementPerMonth": {},
+        "engagementPerYear": {},
+        "postsPerMonth": {},
+        "postsPerYear": {},
+        "likesPerMonth": {},
+        "likesPerYear": {},
+        "commentsPerMonth": {},
+        "commentsPerYear": {},
+        "inactiveStreak": 0
     }
+    
+    likesPerMonth = defaultdict(int)
+    likesPerYear = defaultdict(int)
+    commentsPerMonth = defaultdict(int)
+    commentsPerYear = defaultdict(int)
+    engagementPerMonth = defaultdict(list)
+    engagementPerYear = defaultdict(list)
+    
+    postDates = []
+    prevDate = None
+    longestInactive = 0
 
     for post in profile.get_posts():
         result["likes"] += post.likes
         result["comments"] += post.comments
-        result["post_dates"].append(int(post.date_utc.timestamp()))
-        if post.caption:
-            result["captions"].append(post.caption)
-
+        result["postDates"].append(int(post.date_utc.timestamp()))
+        postDates.append(post.date_utc)
+        
+        result["posts"] += 1
+        
+        if prevDate:
+            gap = (post.date_utc - prevDate).days
+            if gap > longestInactive:
+                longestInactive = gap
+        prevDate = post.date_utc
+        
+        month = post.date_utc.strftime("%Y-%m")
+        year = post.date_utc.strftime("%Y")
+        
+        likesPerMonth[month] += post.likes
+        likesPerYear[year] += post.likes
+        commentsPerMonth[month] += post.comments
+        commentsPerYear[year] += post.comments
+        
+        engagement = (post.likes + post.comments) / profile.followers * 100 if profile.followers else 0
+        engagementPerMonth[month].append(engagement)
+        engagementPerYear[year].append(engagement)
+         
         time.sleep(random.uniform(0.5, 1.5))
 
+    result["averageLikes"] = round(result["likes"] / result["posts"], 2)
+    result["averageComments"] = round(result["comments"] / result["posts"], 2)
+    result["inactiveFollowers"] = profile.followers - result["likes"]
+    result["engagementRate"] = round((result["likes"] + result["comments"]) / profile.followers * 100, 2)
+    
+    months = [datetime.fromtimestamp(date).strftime("%Y-%m") for date in result["postDates"]]
+    years = [datetime.fromtimestamp(date).strftime("%Y") for date in result["postDates"]]
+    
+    result["postsPerMonth"] = dict(Counter(months))
+    result["postsPerYear"] = dict(Counter(years))
+    result["likesPerMonth"] = dict(likesPerMonth)
+    result["likesPerYear"] = dict(likesPerYear)
+    result["commentsPerMonth"] = dict(commentsPerMonth)
+    result["commentsPerYear"] = dict(commentsPerYear)
+    result["engagementPerMonth"] = {k: round(sum(v) / len(v), 2) for k, v in engagementPerMonth.items()}
+    result["engagementPerYear"] = {k: round(sum(v) / len(v), 2) for k, v in engagementPerYear.items()}
+    result["inactiveStreak"] = longestInactive
+    
+    #Summary.json
     antlr_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "antlr"))
     summary_path = os.path.join(antlr_dir, "summary.json")
 
