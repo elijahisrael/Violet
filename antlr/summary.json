@@ -1,9 +1,9 @@
 {
     "followers": 73,
-    "following": 696,
+    "following": 695,
     "likes": 84,
     "comments": 0,
-    "post_dates": [
+    "postDates": [
         1521570674,
         1442959789,
         1430687934,
@@ -14,13 +14,58 @@
         1400617690,
         1400616635
     ],
-    "captions": [
-        "Georgia, Savannah\nMarch 19, 2018",
-        "At the beach\ud83d\ude06\ud83d\ude0e",
-        "From World of Nation: Turkey",
-        "Epcot\u2606",
-        "We went to the beach",
-        "A beautiful day\u2667",
-        "Flowers near panera"
-    ]
+    "inactiveFollowers": 0,
+    "posts": 9,
+    "averageLikes": 9.33,
+    "averageComments": 0.0,
+    "engagementRate": 115.07,
+    "engagementPerMonth": {
+        "2018-03": 15.07,
+        "2015-09": 9.59,
+        "2015-05": 15.07,
+        "2014-07": 14.38,
+        "2014-05": 11.64
+    },
+    "engagementPerYear": {
+        "2018": 15.07,
+        "2015": 12.33,
+        "2014": 12.56
+    },
+    "postsPerMonth": {
+        "2018-03": 1,
+        "2015-09": 1,
+        "2015-05": 1,
+        "2014-07": 2,
+        "2014-05": 4
+    },
+    "postsPerYear": {
+        "2018": 1,
+        "2015": 2,
+        "2014": 6
+    },
+    "likesPerMonth": {
+        "2018-03": 11,
+        "2015-09": 7,
+        "2015-05": 11,
+        "2014-07": 21,
+        "2014-05": 34
+    },
+    "likesPerYear": {
+        "2018": 11,
+        "2015": 18,
+        "2014": 55
+    },
+    "commentsPerMonth": {
+        "2018-03": 0,
+        "2015-09": 0,
+        "2015-05": 0,
+        "2014-07": 0,
+        "2014-05": 0
+    },
+    "commentsPerYear": {
+        "2018": 0,
+        "2015": 0,
+        "2014": 0
+    },
+    "inactiveStreak": 909
 }

@@ -7,6 +7,7 @@ from flask_cors import CORS
 import tempfile
 from datetime import datetime
 from collections import Counter, defaultdict
+import subprocess
 
 app = Flask(__name__)
 CORS(app)
@@ -25,108 +26,82 @@ def inst_login():
         return jsonify({"error": "Username and password are required."}), 400
     
     session_file_path = os.path.join(tempfile.gettempdir(), f"{username}_{session_id}.session")
-
     
-    if code:
-        print("Attempting login with 2FA...")
-        try:
-            loader = instaloader.Instaloader(
-                download_pictures=False,
-                download_videos=False,
-                download_video_thumbnails=False,
-                download_geotags=False,
-                compress_json=False,
-                save_metadata=True,
-                filename_pattern="{target}_{date_utc}",
-                post_metadata_txt_pattern=""
-            )
-
+    loader = instaloader.Instaloader(
+    download_pictures=False,
+    download_videos=False,
+    download_video_thumbnails=False,
+    download_geotags=False,
+    compress_json=False,
+    save_metadata=True,
+    filename_pattern="{target}_{date_utc}",
+    post_metadata_txt_pattern=""
+    )
+    
+    try:
+            print("Attempting login...")
             loader.login(username, password)
 
-        except instaloader.exceptions.TwoFactorAuthRequiredException:
-            try:
-                
-                loader.context.two_factor_login(code)
+            if code:
+                print("Code was passed but not required.")
+            
+            loader.save_session_to_file(session_file_path)
+            print("Login successful. Fetching data...")
+            fetch_and_process(loader, username)
+            os.remove(session_file_path)
+            return jsonify({"status": "success", "session_id": session_id})
 
-                loader.save_session_to_file(session_file_path)
-
-                print("2FA Login successful. Fetching data...")
-                time.sleep(30)
-                fetch_and_process(loader, username)
-
-                if os.path.exists(session_file_path):
-                    os.remove(session_file_path)
-
-                return jsonify({"status": "success", "session_id": session_id})
-
-            except Exception as e:
-                print("2FA failed:", e)
-                return jsonify({"error": f"2FA failed: {e}"}), 403
-
-        except instaloader.exceptions.BadCredentialsException:
-            return jsonify({"error": "Invalid username or password."}), 401
-
-        except Exception as e:
-            print("Login failed:", e)
-            return jsonify({"error": f"Login failed: {e}"}), 403
-
-
-    else:
-        print("Attempting login without 2FA...")
-        try:
-            loader = instaloader.Instaloader(
-                download_pictures=False,
-                download_videos=False,
-                download_video_thumbnails=False,
-                download_geotags=False,
-                compress_json=False,
-                save_metadata=True,
-                filename_pattern="{target}_{date_utc}",
-                post_metadata_txt_pattern=""
-            )
-
-            loader.login(username, password)
-
-        except instaloader.exceptions.TwoFactorAuthRequiredException:
-            print("2FA required — saving session.")
-            with open(session_file_path, "wb") as f:
-                loader.context.save_session_to_file(f)
+    except instaloader.exceptions.TwoFactorAuthRequiredException:
+        # Handle 2FA challenge
+        if not code:
+            print("2FA required.")
             return jsonify({"status": "two_factor", "session_id": session_id})
 
-        except instaloader.exceptions.BadCredentialsException:
-            return jsonify({"error": "Invalid username or password."}), 401
-
-        except Exception as e:
-            print("Login error:", e)
-            return jsonify({"error": "Login Failed. Please Try Again."}), 403
-
-        
-        loader.save_session_to_file(session_file_path)
-
-        print("Login successful. Fetching and processing data...")
         try:
+            print("Submitting 2FA code...")
+            loader.context.two_factor_login(code)
+            loader.save_session_to_file(session_file_path)
+            print("2FA login successful. Fetching data...")
             fetch_and_process(loader, username)
-        except Exception as e:
-            print("Fetch or processing failed:", e)
-            return jsonify({"error": "Instagram temporarily blocked data access. Please try again later."}), 403
-
-        if os.path.exists(session_file_path):
             os.remove(session_file_path)
+            return jsonify({"status": "success", "session_id": session_id})
+        except Exception as e:
+            print("2FA failed:", e)
+            return jsonify({"error": f"2FA failed: {e}"}), 403
 
-        return jsonify({"status": "success", "session_id": session_id})
+    except instaloader.exceptions.BadCredentialsException:
+        return jsonify({"error": "Invalid username or password."}), 401
+
+    except Exception as e:
+        print("Login error:", e)
+        return jsonify({"error": f"Login Failed: {e}"}), 403
 
 
 @app.route("/get-summary/<session_id>")
 def get_summary(session_id):
-    
-    antlr_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "antlr", "summary.json"))
-    if os.path.exists(antlr_path):
-        with open(antlr_path, "r") as f:
-            return jsonify(json.load(f))
-    return jsonify({"error": "Summary not found."}), 404
+    try:
+        antlr_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "antlr"))
+        summary_path = os.path.join(antlr_dir, "summary.json")
+        antlr_jar = os.path.join(antlr_dir, "antlr-4.13.2-complete.jar")
+        json_jar = os.path.join(antlr_dir, "json-20230618.jar")
+        class_path = f"{antlr_dir};{antlr_jar};{json_jar}"
+
+
+        result = subprocess.check_output(
+            ["java", "-cp", class_path, "Main", summary_path],
+            cwd=antlr_dir
+        ).decode("utf-8")
+
+        return jsonify(json.loads(result))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    # antlr_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "antlr", "summary.json"))
+    # if os.path.exists(antlr_path):
+    #     with open(antlr_path, "r") as f:
+    #         return jsonify(json.load(f))
+    # return jsonify({"error": "Summary not found."}), 404
         
 def fetch_and_process(loader, username):
-
 
     print("Fetching Instagram post metadata without saving individual files...")
     time.sleep(15)
@@ -162,7 +137,6 @@ def fetch_and_process(loader, username):
     engagementPerYear = defaultdict(list)
     
     postDates = []
-    prevDate = None
     longestInactive = 0
 
     for post in profile.get_posts():
@@ -173,11 +147,12 @@ def fetch_and_process(loader, username):
         
         result["posts"] += 1
         
-        if prevDate:
-            gap = (post.date_utc - prevDate).days
-            if gap > longestInactive:
-                longestInactive = gap
-        prevDate = post.date_utc
+
+        # if prevDate:
+        #     gap = (post.date_utc - prevDate).days
+        #     if gap > longestInactive:
+        #         longestInactive = gap
+        # prevDate = post.date_utc
         
         month = post.date_utc.strftime("%Y-%m")
         year = post.date_utc.strftime("%Y")
@@ -192,10 +167,17 @@ def fetch_and_process(loader, username):
         engagementPerYear[year].append(engagement)
          
         time.sleep(random.uniform(0.5, 1.5))
-
+        
+        
+    postDates.sort()
+    for i in range(1, len(postDates)):
+        gap = (postDates[i] - postDates[i - 1]).days
+        if gap > longestInactive:
+            longestInactive = gap
+    result["inactiveStreak"] = longestInactive
     result["averageLikes"] = round(result["likes"] / result["posts"], 2)
     result["averageComments"] = round(result["comments"] / result["posts"], 2)
-    result["inactiveFollowers"] = profile.followers - result["likes"]
+    result["inactiveFollowers"] = max(0, profile.followers - result["likes"])
     result["engagementRate"] = round((result["likes"] + result["comments"]) / profile.followers * 100, 2)
     
     months = [datetime.fromtimestamp(date).strftime("%Y-%m") for date in result["postDates"]]
@@ -222,11 +204,17 @@ def fetch_and_process(loader, username):
     
    
     antlr_jar = os.path.join(antlr_dir, "antlr-4.13.2-complete.jar")
-    class_path = f"{antlr_dir};{antlr_jar}"
+    json_jar = os.path.join(antlr_dir, "json-20230618.jar")
+    class_path = f"{antlr_dir};{antlr_jar};{json_jar}"
+
     os.chdir(antlr_dir) 
 
-    os.system(f'java -cp "{class_path}" Main "{summary_path}"')
-
+    #os.system(f'java -cp "{class_path}" Main "{summary_path}"')
+    subprocess.run(
+    ["java", "-cp", class_path, "Main", summary_path],
+    cwd=antlr_dir,
+    check=True
+    )
     
 if __name__ == "__main__":
     app.run(debug=True)

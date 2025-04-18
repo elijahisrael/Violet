@@ -51,7 +51,7 @@ export default function HomePage() {
         try {
           const response = await fetch(`http://localhost:5000/get-summary/${sessionId}`);
           const summary = await response.json();
-          navigate("/analysis", { state: { summary } });
+          navigate("/analysis", { state: { summary, username } });
         } 
         catch (error) {
           console.error("Failed to fetch summary:", error);

@@ -2,6 +2,8 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import java.io.File;
 import java.util.*;
+import org.json.JSONObject;
+
 
 public class Main {
     static class Tracker extends SocialMediaBaseListener {
@@ -14,15 +16,16 @@ public class Main {
         double averageComments = 0.0;
         int inactiveFollowers = 0;
         double engagementRate = 0.0;
-        double engagementPerMonth = 0.0;
-        double engagementPerYear = 0.0;
-        int postsPerMonth = 0;
-        int postsPerYear = 0;
-        int likesPerMonth = 0;
-        int likesPerYear = 0;
-        int commentsPerMonth = 0;
-        int commentsPerYear = 0;
         int inactiveStreak = 0;
+        Map<String, Double> engagementPerMonth = new HashMap<>();
+        Map<String, Double> engagementPerYear = new HashMap<>();
+        Map<String, Integer> postsPerMonth = new HashMap<>();
+        Map<String, Integer> postsPerYear = new HashMap<>();
+        Map<String, Integer> likesPerMonth = new HashMap<>();
+        Map<String, Integer> likesPerYear = new HashMap<>();
+        Map<String, Integer> commentsPerMonth = new HashMap<>();
+        Map<String, Integer> commentsPerYear = new HashMap<>();
+        
 
         @Override
         public void enterPair(SocialMediaParser.PairContext ctx) {
@@ -39,37 +42,57 @@ public class Main {
                 case "averageComments": averageComments = Double.parseDouble(val); break;
                 case "inactiveFollowers": inactiveFollowers = Integer.parseInt(val); break;
                 case "engagementRate": engagementRate = Double.parseDouble(val); break;
-                case "engagementPerMonth": engagementPerMonth = Double.parseDouble(val); break;
-                case "engagementPerYear": engagementPerYear = Double.parseDouble(val); break;
-                case "postsPerMonth": postsPerMonth = Integer.parseInt(val); break;
-                case "postsPerYear": postsPerYear = Integer.parseInt(val); break;
-                case "likesPerMonth": likesPerMonth = Integer.parseInt(val); break;
-                case "likesPerYear": likesPerYear = Integer.parseInt(val); break;
-                case "commentsPerMonth": commentsPerMonth = Integer.parseInt(val); break;
-                case "commentsPerYear": commentsPerYear = Integer.parseInt(val); break;
+                case "engagementPerMonth": engagementPerMonth = parseJsonMapToDouble(val); break;
+                case "engagementPerYear": engagementPerYear = parseJsonMapToDouble(val); break;
+                case "postsPerMonth": postsPerMonth = parseJsonMapToInt(val); break;
+                case "postsPerYear": postsPerYear = parseJsonMapToInt(val); break;
+                case "likesPerMonth": likesPerMonth = parseJsonMapToInt(val); break;
+                case "likesPerYear": likesPerYear = parseJsonMapToInt(val); break;
+                case "commentsPerMonth": commentsPerMonth = parseJsonMapToInt(val); break;
+                case "commentsPerYear": commentsPerYear = parseJsonMapToInt(val); break;
                 case "inactiveStreak": inactiveStreak = Integer.parseInt(val); break;
             }
         }
+        private Map<String, Double> parseJsonMapToDouble(String json) {
+            Map<String, Double> map = new HashMap<>();
+            JSONObject obj = new JSONObject(json);
+            for (String key : obj.keySet()) {
+                map.put(key, obj.getDouble(key));
+            }
+            return map;
+        }
+
+        private Map<String, Integer> parseJsonMapToInt(String json) {
+            Map<String, Integer> map = new HashMap<>();
+            JSONObject obj = new JSONObject(json);
+            for (String key : obj.keySet()) {
+                map.put(key, obj.getInt(key));
+            }
+            return map;
+        }
 
         public void report() {
-            System.out.println("Total Followers: " + followers);
-            System.out.println("Total Following: " + following);
-            System.out.println("Total Likes on Posts: " + likes);
-            System.out.println("Total Comments: " + comments);
-            System.out.println("Total Posts: " + postCount);
-            System.out.println("Average Likes per Post: " + averageLikes);
-            System.out.println("Average Comments per Post: " + averageComments);
-            System.out.println("Inactive Followers: " + inactiveFollowers);
-            System.out.println("Overall Engagement Rate: " + engagementRate + "%");
-            System.out.println("Engagement Rate Per Month: " + engagementPerMonth);
-            System.out.println("Engagement Rate Per Year: " + engagementPerYear);
-            System.out.println("Posts per Month: " + postsPerMonth);
-            System.out.println("Posts per Year: " + postsPerYear);
-            System.out.println("Likes per Month: " + likesPerMonth);
-            System.out.println("Likes per Year: " + likesPerYear);
-            System.out.println("Comments per Month: " + commentsPerMonth);
-            System.out.println("Comments per Year: " + commentsPerYear);
-            System.out.println("Inactive Streak: " + inactiveStreak);
+            JSONObject json = new JSONObject();
+            json.put("Total Followers ", followers);
+            json.put("Total Following ", following);
+            json.put("Total Likes on Posts ", likes);
+            json.put("Total Comments ", comments);
+            json.put("Total Posts ", postCount);
+            json.put("Average Likes per Post ", averageLikes);
+            json.put("Average Comments per Post ",averageComments);
+            json.put("Inactive Followers ", inactiveFollowers);
+            json.put("Overall Engagement Rate ", engagementRate);
+            json.put("Engagement Rate Per Month ", engagementPerMonth);
+            json.put("Engagement Rate Per Year ", engagementPerYear);
+            json.put("Posts per Month ", postsPerMonth);
+            json.put("Posts per Year ", postsPerYear);
+            json.put("Likes per Month ", likesPerMonth);
+            json.put("Likes per Year ", likesPerYear);
+            json.put("Comments per Month ", commentsPerMonth);
+            json.put("Comments per Year ", commentsPerYear);
+            json.put("Inactive Streak ", inactiveStreak);
+
+            System.out.println(json.toString());
         }
     }
 
