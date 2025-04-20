@@ -1,7 +1,7 @@
 import Header from "./Header";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, CartesianGrid, Scatter, ComposedChart, Area, Pie, PieChart } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, CartesianGrid, Scatter, ComposedChart, Area, Pie, PieChart, Legend } from "recharts";
 
 export default function AnalysisPage() {
   const location = useLocation();
@@ -33,6 +33,24 @@ export default function AnalysisPage() {
     { label: "Longest Inactive Streak:", value: summary["Inactive Streak "] + " days" },
     
   ];
+  const perMonths = Object.keys(summary["Posts per Month "])
+  .sort()
+  .map((month) => ({
+    name: month,
+    posts: summary["Posts per Month "][month] || 0,
+    likes: summary["Likes per Month "][month] || 0,
+    comments: summary["Comments per Month "][month] || 0,
+    engagement: summary["Engagement Rate Per Month "][month] || 0,
+  }));
+  const perYears = Object.keys(summary["Posts per Year "])
+  .sort()
+  .map((year) => ({
+    name: year,
+    posts: summary["Posts per Year "][year] || 0,
+    likes: summary["Likes per Year "][year] || 0,
+    comments: summary["Comments per Year "][year] || 0,
+    engagement: summary["Engagement Rate Per Year "][year] || 0,
+  }));
 
   return (
     <>
@@ -81,8 +99,8 @@ export default function AnalysisPage() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-wrap gap-6 items-center justify-center p-8">
-          <div className="text-center w-[420px]">
+        <div className="flex flex-wrap gap-8 items-center justify-center p-8">
+          <div className="text-center w-[520px]">
           <h2 className="text-2xl font-mono font-semibold text-violet-color mb-4">
             Posts
           </h2>
@@ -102,7 +120,7 @@ export default function AnalysisPage() {
           </div>
           {postToggle ==="yearly" ? (
             <>
-            <BarChart width={400} height={300} data={Object.entries(summary["Posts per Year "]).map(([year, count]) => ({ name: year, posts: count}))} >
+            <BarChart width={500} height={300} data={perYears} >
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
@@ -112,7 +130,7 @@ export default function AnalysisPage() {
             </>
           ):(
             <>
-            <BarChart width={400} height={300} data={Object.entries(summary["Posts per Month "]).map(([month, count]) => ({ name: month, posts: count}))} >
+            <BarChart width={500} height={300} data={perMonths} >
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
@@ -122,7 +140,7 @@ export default function AnalysisPage() {
           </>
           )}
           </div>
-          <div className="text-center w-[420px]">
+          <div className="text-center w-[520px]">
           <h2 className="text-2xl font-mono font-semibold text-violet-color mb-4">
             Likes
           </h2>
@@ -142,27 +160,27 @@ export default function AnalysisPage() {
           </div>
             {likeToggle ==="yearly" ? (
               <>
-              <LineChart width={400} height={300} data={Object.entries(summary["Likes per Year "]).map(([year, count]) => ({ name: year, likes: count}))} >
+              <LineChart width={500} height={300} data={perYears} >
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <CartesianGrid stroke="#bdbfee" />
-                <Line dataKey="likes" stroke="#8888f8" fill="#8888f8" />
+                <Line type="monotone" dataKey="likes" stroke="#8888f8" fill="#8888f8" />
               </LineChart>
               </>
             ):(
               <>
-              <LineChart width={400} height={300} data={Object.entries(summary["Likes per Month "]).map(([month, count]) => ({ name: month, likes: count}))} >
+              <LineChart width={500} height={300} data={perMonths} >
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <CartesianGrid stroke="#bdbfee" />
-                <Line dataKey="likes" stroke="#8888f8" fill="#8888f8" />
+                <Line type="monotone" dataKey="likes" stroke="#8888f8" fill="#8888f8" />
               </LineChart>
             </>
             )}
           </div>
-          <div className="text-center w-[420px]">
+          <div className="text-center w-[520px]">
           <h2 className="text-2xl font-mono font-semibold text-violet-color mb-4">
             Comments
           </h2>
@@ -182,7 +200,7 @@ export default function AnalysisPage() {
           </div>
             {commentToggle ==="yearly" ? (
               <>
-              <LineChart width={400} height={300} data={Object.entries(summary["Comments per Year "]).map(([year, count]) => ({ name: year, comments: count}))} >
+              <LineChart width={500} height={300} data={perYears} >
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
@@ -192,7 +210,7 @@ export default function AnalysisPage() {
               </>
             ):(
               <>
-              <LineChart width={400} height={300} data={Object.entries(summary["Comments per Month "]).map(([month, count]) => ({ name: month, comments: count}))} >
+              <LineChart width={500} height={300} data={perMonths} >
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
@@ -202,7 +220,7 @@ export default function AnalysisPage() {
             </>
             )}
           </div>
-          <div className="text-center w-[420px]">
+          <div className="text-center w-[520px]">
           <h2 className="text-2xl font-mono font-semibold text-violet-color mb-4">
             Engagement Rate
           </h2>
@@ -225,35 +243,37 @@ export default function AnalysisPage() {
           </div>
             {engagementToggle ==="yearly" ? (
               <>
-              <ComposedChart width={400} height={300} data={Object.entries(summary["Engagement Rate Per Year "]).map(([year, count]) => ({ name: year, engagement: count}))} >
+              <ComposedChart width={500} height={300} data={perYears} >
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <CartesianGrid stroke="#bdbfee" />
-                <Area type="monotone" dataKey="engagement" fill="#bdbfee" stroke="#8888f8" />
-                <Bar dataKey="engagement" barSize={40} fill="#413ea0" />
-                <Line type="monotone" dataKey="engagement" stroke="#8884d8" fill="#8888f8" />
+                <Legend />
+                <Area type="monotone" dataKey="engagement" fill="#bdbfee" stroke="#bdbfee" />
+                <Bar dataKey="posts" barSize={40} fill="#413ea0" />
+                <Line type="monotone" dataKey="likes" stroke="#82ca9d" fill="#82ca9d" />
               </ComposedChart>
               </>
             ):(
               <>
-              <ComposedChart width={400} height={300} data={Object.entries(summary["Engagement Rate Per Month "]).map(([month, count]) => ({ name: month, engagement: count}))} >
+              <ComposedChart width={500} height={300} data={perMonths} >
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <CartesianGrid stroke="#bdbfee" />
-                <Area type="monotone" dataKey="engagement" fill="#bdbfee" stroke="#8888f8" />
-                <Bar dataKey="engagement" barSize={40} fill="#413ea0" />
-                <Line type="monotone" dataKey="engagement" stroke="#8884d8" fill="#8888f8" />
+                <Legend />
+                <Area type="monotone" dataKey="engagement" fill="#bdbfee" stroke="#bdbfee" />
+                <Bar dataKey="posts" barSize={40} fill="#413ea0" />
+                <Line type="monotone" dataKey="likes" stroke="#82ca9d" fill="#82ca9d" />
               </ComposedChart>
             </>
             )}
           </div>
-          <div className="w-[420px]">
+          <div className="w-[520px]">
           <h2 className=" p-4 text-center text-2xl font-mono font-semibold text-violet-color mb-4">
             Active vs Inactive Followers 
           </h2>
-          <PieChart width={400} height={300}> 
+          <PieChart width={500} height={300}> 
             <Pie 
               data={[
                 { name: "Active", value: Math.min(summary["Total Likes on Posts "], summary["Total Followers "]), fill: "#413ea0" },

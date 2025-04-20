@@ -1,4 +1,5 @@
 
+from collections import Counter, defaultdict
 import random
 import time
 from flask import Flask, request, jsonify
@@ -6,7 +7,6 @@ import instaloader, os, json, uuid
 from flask_cors import CORS
 import tempfile
 from datetime import datetime
-from collections import Counter, defaultdict
 import subprocess
 
 app = Flask(__name__)
@@ -107,10 +107,7 @@ def fetch_and_process(loader, username):
         "likes": 0,
         "comments": 0,
         "postDates": [],
-        "inactiveFollowers": 0,
         "posts": 0,
-        "averageLikes": 0.0,
-        "averageComments": 0.0,
         "engagementRate": 0.0,
         "engagementPerMonth": {},
         "engagementPerYear": {},
@@ -119,10 +116,8 @@ def fetch_and_process(loader, username):
         "likesPerMonth": {},
         "likesPerYear": {},
         "commentsPerMonth": {},
-        "commentsPerYear": {},
-        "inactiveStreak": 0
+        "commentsPerYear": {}
     }
-    
     likesPerMonth = defaultdict(int)
     likesPerYear = defaultdict(int)
     commentsPerMonth = defaultdict(int)
@@ -131,8 +126,7 @@ def fetch_and_process(loader, username):
     engagementPerYear = defaultdict(list)
     
     postDates = []
-    longestInactive = 0
-
+   
     for post in profile.get_posts():
         result["likes"] += post.likes
         result["comments"] += post.comments
@@ -140,7 +134,7 @@ def fetch_and_process(loader, username):
         postDates.append(post.date_utc)
         
         result["posts"] += 1
-         
+        
         month = post.date_utc.strftime("%Y-%m")
         year = post.date_utc.strftime("%Y")
         
@@ -153,20 +147,10 @@ def fetch_and_process(loader, username):
         engagementPerMonth[month].append(engagement)
         engagementPerYear[year].append(engagement)
          
-        time.sleep(random.uniform(0.5, 1.5))
-        
-    postDates.sort()
-    for i in range(1, len(postDates)):
-        gap = (postDates[i] - postDates[i - 1]).days
-        if gap > longestInactive:
-            longestInactive = gap
-            
-    result["inactiveStreak"] = longestInactive
-    result["averageLikes"] = round(result["likes"] / result["posts"], 2)
-    result["averageComments"] = round(result["comments"] / result["posts"], 2)
-    result["inactiveFollowers"] = max(0, profile.followers - result["likes"])
-    result["engagementRate"] = round(((result["likes"] + result["comments"]) / result["posts"]) / profile.followers * 100, 2) if profile.followers and result["posts"] else 0.0
+        time.sleep(random.uniform(0.5, 1.5))  
     
+    result["engagementRate"] = round(((result["likes"] + result["comments"]) / result["posts"]) / profile.followers * 100, 2) if profile.followers and result["posts"] else 0.0
+        
     months = [datetime.fromtimestamp(date).strftime("%Y-%m") for date in result["postDates"]]
     years = [datetime.fromtimestamp(date).strftime("%Y") for date in result["postDates"]]
     
@@ -178,20 +162,17 @@ def fetch_and_process(loader, username):
     result["commentsPerYear"] = dict(commentsPerYear)
     
     result["engagementPerMonth"] = {
-    month: round(((likesPerMonth[month] + commentsPerMonth[month]) / result["postsPerMonth"][month]) / profile.followers, 4)
+    month: round(((likesPerMonth[month] + commentsPerMonth[month]) / (result["postsPerMonth"][month]) / profile.followers) * 100, 2)
     for month in result["postsPerMonth"]
     if result["postsPerMonth"][month] > 0 and profile.followers > 0
     }
 
     result["engagementPerYear"] = {
-        year: round(((likesPerYear[year] + commentsPerYear[year]) / result["postsPerYear"][year]) / profile.followers, 4)
+        year: round(((likesPerYear[year] + commentsPerYear[year]) / (result["postsPerYear"][year]) / profile.followers) * 100, 2)
         for year in result["postsPerYear"]
         if result["postsPerYear"][year] > 0 and profile.followers > 0
-    }
-    
-    result["inactiveStreak"] = longestInactive
-    
-    #Summary.json
+    }     
+   
     antlr_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "antlr"))
     summary_path = os.path.join(antlr_dir, "summary.json")
 

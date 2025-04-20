@@ -1,9 +1,13 @@
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import java.io.File;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import org.json.JSONObject;
-
 
 public class Main {
     static class Tracker extends SocialMediaBaseListener {
@@ -17,6 +21,7 @@ public class Main {
         int inactiveFollowers = 0;
         double engagementRate = 0.0;
         int inactiveStreak = 0;
+        
         Map<String, Double> engagementPerMonth = new HashMap<>();
         Map<String, Double> engagementPerYear = new HashMap<>();
         Map<String, Integer> postsPerMonth = new HashMap<>();
@@ -25,33 +30,40 @@ public class Main {
         Map<String, Integer> likesPerYear = new HashMap<>();
         Map<String, Integer> commentsPerMonth = new HashMap<>();
         Map<String, Integer> commentsPerYear = new HashMap<>();
-        
 
+        List<Long> postTimestamps = new ArrayList<>();
+    
         @Override
         public void enterPair(SocialMediaParser.PairContext ctx) {
             String key = ctx.STRING().getText().replaceAll("\"", "");
             String val = ctx.value().getText();
-
-            switch (key) {
-                case "followers": followers = Integer.parseInt(val); break;
-                case "following": following = Integer.parseInt(val); break;
-                case "likes": likes = Integer.parseInt(val); break;
-                case "comments": comments = Integer.parseInt(val); break;
-                case "posts": postCount = Integer.parseInt(val); break;
-                case "averageLikes": averageLikes = Double.parseDouble(val); break;
-                case "averageComments": averageComments = Double.parseDouble(val); break;
-                case "inactiveFollowers": inactiveFollowers = Integer.parseInt(val); break;
-                case "engagementRate": engagementRate = Double.parseDouble(val); break;
-                case "engagementPerMonth": engagementPerMonth = parseJsonMapToDouble(val); break;
-                case "engagementPerYear": engagementPerYear = parseJsonMapToDouble(val); break;
-                case "postsPerMonth": postsPerMonth = parseJsonMapToInt(val); break;
-                case "postsPerYear": postsPerYear = parseJsonMapToInt(val); break;
-                case "likesPerMonth": likesPerMonth = parseJsonMapToInt(val); break;
-                case "likesPerYear": likesPerYear = parseJsonMapToInt(val); break;
-                case "commentsPerMonth": commentsPerMonth = parseJsonMapToInt(val); break;
-                case "commentsPerYear": commentsPerYear = parseJsonMapToInt(val); break;
-                case "inactiveStreak": inactiveStreak = Integer.parseInt(val); break;
-            }
+            try {
+                switch (key) {
+                    case "followers": followers = Integer.parseInt(val); break;
+                    case "following": following = Integer.parseInt(val); break;
+                    case "likes": likes = Integer.parseInt(val); break;
+                    case "comments": comments = Integer.parseInt(val); break;
+                    case "posts": postCount = Integer.parseInt(val); break;
+                    case "postDates":
+                        val = val.replace("[", "").replace("]", "").replaceAll("\\s", "");
+                        if (!val.isEmpty()) {
+                            for (String dt : val.split(",")) {
+                                postTimestamps.add(Long.parseLong(dt));
+                            }
+                        }
+                        break;
+                        case "engagementRate": engagementRate = Double.parseDouble(val); break;
+                        case "engagementPerMonth": engagementPerMonth = parseJsonMapToDouble(val); break;
+                        case "engagementPerYear": engagementPerYear = parseJsonMapToDouble(val); break;
+                        case "postsPerMonth": postsPerMonth = parseJsonMapToInt(val); break;
+                        case "postsPerYear": postsPerYear = parseJsonMapToInt(val); break;
+                        case "likesPerMonth": likesPerMonth = parseJsonMapToInt(val); break;
+                        case "likesPerYear": likesPerYear = parseJsonMapToInt(val); break;
+                        case "commentsPerMonth": commentsPerMonth = parseJsonMapToInt(val); break;
+                        case "commentsPerYear": commentsPerYear = parseJsonMapToInt(val); break;
+                }
+            } 
+            catch (Exception ignored) {}
         }
         private Map<String, Double> parseJsonMapToDouble(String json) {
             Map<String, Double> map = new HashMap<>();
@@ -71,7 +83,31 @@ public class Main {
             return map;
         }
 
+        public void calculate() {
+            if (postCount > 0) {
+                averageLikes = Math.round(((double) likes / postCount) * 100.0) / 100.0;
+                averageComments = Math.round(((double) comments / postCount) * 100.0) / 100.0;
+            }
+
+            inactiveFollowers = Math.max(0, followers - likes);
+
+            if (postTimestamps.size() > 1) {
+                Collections.sort(postTimestamps);
+                long longestGap = 0;
+                for (int i = 1; i < postTimestamps.size(); i++) {
+                    long gapSec = postTimestamps.get(i) - postTimestamps.get(i - 1);
+                    long gapDays = gapSec / (24 * 60 * 60);
+                    if (gapDays > longestGap) {
+                        longestGap = gapDays;
+                    }
+                }
+                inactiveStreak = (int) longestGap;
+            }
+        }
+
         public void report() {
+            calculate();
+
             JSONObject json = new JSONObject();
             json.put("Total Followers ", followers);
             json.put("Total Following ", following);
