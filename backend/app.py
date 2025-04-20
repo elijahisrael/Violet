@@ -12,7 +12,6 @@ import subprocess
 app = Flask(__name__)
 CORS(app)
 
-
 @app.route('/login', methods=['POST'])
 def inst_login():
     data = request.get_json()
@@ -41,18 +40,10 @@ def inst_login():
     try:
             print("Attempting login...")
             loader.login(username, password)
-
-            if code:
-                print("Code was passed but not required.")
-            
-            loader.save_session_to_file(session_file_path)
-            print("Login successful. Fetching data...")
-            fetch_and_process(loader, username)
-            os.remove(session_file_path)
-            return jsonify({"status": "success", "session_id": session_id})
+            print("Login Successful but 2FA is disabled. Rejecting.")
+            return jsonify({"error": "Please enable Authentication app 2FA in your account to use this service."}), 403
 
     except instaloader.exceptions.TwoFactorAuthRequiredException:
-        # Handle 2FA challenge
         if not code:
             print("2FA required.")
             return jsonify({"status": "two_factor", "session_id": session_id})
@@ -60,12 +51,23 @@ def inst_login():
         try:
             print("Submitting 2FA code...")
             loader.context.two_factor_login(code)
+
             loader.save_session_to_file(session_file_path)
             print("2FA login successful. Fetching data...")
             fetch_and_process(loader, username)
             os.remove(session_file_path)
             return jsonify({"status": "success", "session_id": session_id})
+        
         except Exception as e:
+            err_str = str(e).lower()
+            if "code is no longer valid" in err_str or "challenge" in err_str:
+                print("SMS 2FA detected. Aborting login to avoid re-triggering code.")
+                return jsonify({
+                    "status": "sms_2fa",
+                    "message": "SMS 2FA is not supported. Please use an Authenticator App.",
+                    "session_id": session_id
+                }), 403
+            
             print("2FA failed:", e)
             return jsonify({"error": f"2FA failed: {e}"}), 403
 
@@ -76,7 +78,6 @@ def inst_login():
         print("Login error:", e)
         return jsonify({"error": f"Login Failed: {e}"}), 403
 
-
 @app.route("/get-summary/<session_id>")
 def get_summary(session_id):
     try:
@@ -86,7 +87,6 @@ def get_summary(session_id):
         json_jar = os.path.join(antlr_dir, "json-20230618.jar")
         class_path = f"{antlr_dir};{antlr_jar};{json_jar}"
 
-
         result = subprocess.check_output(
             ["java", "-cp", class_path, "Main", summary_path],
             cwd=antlr_dir
@@ -95,16 +95,10 @@ def get_summary(session_id):
         return jsonify(json.loads(result))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    # antlr_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "antlr", "summary.json"))
-    # if os.path.exists(antlr_path):
-    #     with open(antlr_path, "r") as f:
-    #         return jsonify(json.load(f))
-    # return jsonify({"error": "Summary not found."}), 404
         
 def fetch_and_process(loader, username):
 
     print("Fetching Instagram post metadata without saving individual files...")
-    time.sleep(15)
     profile = instaloader.Profile.from_username(loader.context, username)
 
     result = {
@@ -146,14 +140,7 @@ def fetch_and_process(loader, username):
         postDates.append(post.date_utc)
         
         result["posts"] += 1
-        
-
-        # if prevDate:
-        #     gap = (post.date_utc - prevDate).days
-        #     if gap > longestInactive:
-        #         longestInactive = gap
-        # prevDate = post.date_utc
-        
+         
         month = post.date_utc.strftime("%Y-%m")
         year = post.date_utc.strftime("%Y")
         
@@ -168,17 +155,17 @@ def fetch_and_process(loader, username):
          
         time.sleep(random.uniform(0.5, 1.5))
         
-        
     postDates.sort()
     for i in range(1, len(postDates)):
         gap = (postDates[i] - postDates[i - 1]).days
         if gap > longestInactive:
             longestInactive = gap
+            
     result["inactiveStreak"] = longestInactive
     result["averageLikes"] = round(result["likes"] / result["posts"], 2)
     result["averageComments"] = round(result["comments"] / result["posts"], 2)
     result["inactiveFollowers"] = max(0, profile.followers - result["likes"])
-    result["engagementRate"] = round((result["likes"] + result["comments"]) / profile.followers * 100, 2)
+    result["engagementRate"] = round(((result["likes"] + result["comments"]) / result["posts"]) / profile.followers * 100, 2) if profile.followers and result["posts"] else 0.0
     
     months = [datetime.fromtimestamp(date).strftime("%Y-%m") for date in result["postDates"]]
     years = [datetime.fromtimestamp(date).strftime("%Y") for date in result["postDates"]]
@@ -189,8 +176,19 @@ def fetch_and_process(loader, username):
     result["likesPerYear"] = dict(likesPerYear)
     result["commentsPerMonth"] = dict(commentsPerMonth)
     result["commentsPerYear"] = dict(commentsPerYear)
-    result["engagementPerMonth"] = {k: round(sum(v) / len(v), 2) for k, v in engagementPerMonth.items()}
-    result["engagementPerYear"] = {k: round(sum(v) / len(v), 2) for k, v in engagementPerYear.items()}
+    
+    result["engagementPerMonth"] = {
+    month: round(((likesPerMonth[month] + commentsPerMonth[month]) / result["postsPerMonth"][month]) / profile.followers, 4)
+    for month in result["postsPerMonth"]
+    if result["postsPerMonth"][month] > 0 and profile.followers > 0
+    }
+
+    result["engagementPerYear"] = {
+        year: round(((likesPerYear[year] + commentsPerYear[year]) / result["postsPerYear"][year]) / profile.followers, 4)
+        for year in result["postsPerYear"]
+        if result["postsPerYear"][year] > 0 and profile.followers > 0
+    }
+    
     result["inactiveStreak"] = longestInactive
     
     #Summary.json
@@ -202,14 +200,12 @@ def fetch_and_process(loader, username):
 
     print("Saved optimized summary.json.")
     
-   
     antlr_jar = os.path.join(antlr_dir, "antlr-4.13.2-complete.jar")
     json_jar = os.path.join(antlr_dir, "json-20230618.jar")
     class_path = f"{antlr_dir};{antlr_jar};{json_jar}"
 
     os.chdir(antlr_dir) 
 
-    #os.system(f'java -cp "{class_path}" Main "{summary_path}"')
     subprocess.run(
     ["java", "-cp", class_path, "Main", summary_path],
     cwd=antlr_dir,

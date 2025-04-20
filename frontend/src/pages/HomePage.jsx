@@ -34,6 +34,12 @@ export default function HomePage() {
             else if (data.status === "success") { 
               fetchSummary(data.session_id);
             } 
+            else if (data.status === "sms_2fa") {
+                setLoading(false);
+                setStep(1);
+                setCode("");
+                alert("SMS 2FA is not supported. Please use the app for 2FA.")
+            } 
             else {
                 setLoading(false);
                 alert(data.error || "Login failed");
@@ -72,7 +78,7 @@ export default function HomePage() {
                 </div>
             )}     
             {!loading && (
-                <div className="flex flex-col items-center justify-center font-mono h-screen bg-white">
+                <div className="flex flex-col items-center justify-center font-mono bg-white">
                     <h1 className="text-3xl font-bold mb-6 text-violet-color">
                         {step === 1 && "Please login to your Instagram account"}
                         {step === 2 && "Please verify your Instagram account"}
@@ -80,6 +86,9 @@ export default function HomePage() {
                     <form onSubmit={handleLogin} className="w-80">
                         {step === 1 && (
                             <>
+                                <p className="mb-6 text-sm font-mono text-center text-violet-color">
+                                    *To use this service 2FA is required. SMS 2FA is not supported so please enable app-based 2FA in your Instagram settings.
+                                </p>
                                 <input
                                     type="text"
                                     placeholder="Username"
@@ -104,7 +113,7 @@ export default function HomePage() {
                         {step === 2 && (
                             <>
                                 <p className="mb-2 text-violet-color">
-                                    Two-factor code required. Please check your phone/app.
+                                    Two-factor code required. Please check your authentication app.
                                 </p>
                                 <input
                                     type="text"
