@@ -205,7 +205,7 @@ export default function AnalysisPage() {
                 <YAxis />
                 <Tooltip />
                 <CartesianGrid stroke="#bdbfee" />
-                <Line dataKey="comments" stroke="#8888f8" fill="#8888f8" />
+                <Line dataKey="comments" stroke="#FF0000" fill="#FF0000" />
               </LineChart>
               </>
             ):(
@@ -215,7 +215,7 @@ export default function AnalysisPage() {
                 <YAxis />
                 <Tooltip />
                 <CartesianGrid stroke="#bdbfee" />
-                <Line dataKey="comments" stroke="#8888f8" fill="#8888f8" />
+                <Line dataKey="comments" stroke="#FF0000" fill="#FF0000" />
               </LineChart>
             </>
             )}
