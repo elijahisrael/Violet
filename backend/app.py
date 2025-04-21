@@ -2,6 +2,7 @@
 from collections import Counter, defaultdict
 import random
 import time
+import traceback
 from flask import Flask, request, jsonify
 import instaloader, os, json, uuid
 from flask_cors import CORS
@@ -60,11 +61,22 @@ def inst_login():
         
         except Exception as e:
             err_str = str(e).lower()
-            if "code is no longer valid" in err_str or "challenge" in err_str:
-                print("SMS 2FA detected. Aborting login to avoid re-triggering code.")
+            if "code is no longer valid" in err_str:
+                return jsonify({
+                    "status": "2fa_invalid",
+                    "message": "The code you entered is no longer valid. Please try again.",
+                    "session_id": session_id
+                }), 403
+            if "checkpoint" in err_str or "challenge" in err_str:
+                return jsonify({
+                    "status": "challenge_required",
+                    "message": "Instagram blocked your login attempt. Please check your app and try again.",
+                    "session_id": session_id
+                }), 403
+            if "sms" in err_str and "2fa" in err_str:
                 return jsonify({
                     "status": "sms_2fa",
-                    "message": "SMS 2FA is not supported. Please use an Authenticator App.",
+                    "message": "SMS 2FA is not supported. Please use an authentication app.",
                     "session_id": session_id
                 }), 403
             
@@ -175,6 +187,13 @@ def fetch_and_process(loader, username):
    
     antlr_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "antlr"))
     summary_path = os.path.join(antlr_dir, "summary.json")
+    
+    os.chdir(antlr_dir) 
+    
+    if os.path.exists(summary_path):
+        print("Summary.json exists, overwriting...")
+    else:
+        print("Creating summary.json...")
 
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=4)
@@ -183,15 +202,18 @@ def fetch_and_process(loader, username):
     
     antlr_jar = os.path.join(antlr_dir, "antlr-4.13.2-complete.jar")
     json_jar = os.path.join(antlr_dir, "json-20230618.jar")
-    class_path = f"{antlr_dir};{antlr_jar};{json_jar}"
-
-    os.chdir(antlr_dir) 
-
+    class_path = os.pathsep.join([antlr_dir, antlr_jar, json_jar])
+    
+    
+    print("Running Java program to process summary.json...")
+    print("Class path:", class_path)
+    print("summary_path:", summary_path)
+    
     subprocess.run(
     ["java", "-cp", class_path, "Main", summary_path],
     cwd=antlr_dir,
     check=True
-    )
+    )  
     
 if __name__ == "__main__":
     app.run(debug=True)

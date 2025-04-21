@@ -5,7 +5,7 @@ json
     ;
 
 object
-    : '{' pair (',' pair)* '}'
+    : '{' (pair (',' pair)*)? '}'
     ;
 
 pair

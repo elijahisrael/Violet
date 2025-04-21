@@ -35,6 +35,7 @@ public class Main {
     
         @Override
         public void enterPair(SocialMediaParser.PairContext ctx) {
+            if (ctx.STRING() == null || ctx.value() == null) return;
             String key = ctx.STRING().getText().replaceAll("\"", "");
             String val = ctx.value().getText();
             try {
@@ -63,8 +64,12 @@ public class Main {
                         case "commentsPerYear": commentsPerYear = parseJsonMapToInt(val); break;
                 }
             } 
-            catch (Exception ignored) {}
+            catch (Exception e) {
+                System.err.println("Error parsing key: " + key + ", value: " + val);
+                e.printStackTrace();
+            }
         }
+
         private Map<String, Double> parseJsonMapToDouble(String json) {
             Map<String, Double> map = new HashMap<>();
             JSONObject obj = new JSONObject(json);
@@ -133,18 +138,25 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        String filename = args.length > 0 ? args[0] : "summary.json";
+        try {
+            String filename = args.length > 0 ? args[0] : "summary.json";
 
-        Tracker tracker = new Tracker();
-        ParseTreeWalker walker = new ParseTreeWalker();
+            Tracker tracker = new Tracker();
+            ParseTreeWalker walker = new ParseTreeWalker();
 
-        CharStream input = CharStreams.fromFileName(filename);
-        SocialMediaLexer lexer = new SocialMediaLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        SocialMediaParser parser = new SocialMediaParser(tokens);
-        ParseTree tree = parser.json();
-        walker.walk(tracker, tree);
+            CharStream input = CharStreams.fromFileName(filename);
+            SocialMediaLexer lexer = new SocialMediaLexer(input);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            SocialMediaParser parser = new SocialMediaParser(tokens);
+            ParseTree tree = parser.json();
+            walker.walk(tracker, tree);
 
-        tracker.report();
+            tracker.report();
+        } 
+        catch (Exception e) {
+            System.err.println("Java Execution failed:");
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 }
