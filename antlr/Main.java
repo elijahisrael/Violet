@@ -18,7 +18,7 @@ public class Main {
         int postCount = 0;
         double averageLikes = 0.0;
         double averageComments = 0.0;
-        int inactiveFollowers = 0;
+        long daysSinceLastPost = 0;
         double engagementRate = 0.0;
         int inactiveStreak = 0;
         
@@ -94,7 +94,11 @@ public class Main {
                 averageComments = Math.round(((double) comments / postCount) * 100.0) / 100.0;
             }
 
-            inactiveFollowers = Math.max(0, followers - likes);
+            if (!postTimestamps.isEmpty()) {
+                long recentPost = postTimestamps.stream().max(Long::compareTo).get();
+                long current = System.currentTimeMillis() / 1000;
+                daysSinceLastPost = (current - recentPost) / (24 * 60 * 60);
+            }
 
             if (postTimestamps.size() > 1) {
                 Collections.sort(postTimestamps);
@@ -121,7 +125,7 @@ public class Main {
             json.put("Total Posts ", postCount);
             json.put("Average Likes per Post ", averageLikes);
             json.put("Average Comments per Post ",averageComments);
-            json.put("Inactive Followers ", inactiveFollowers);
+            json.put("Days Since Last Post ", daysSinceLastPost);
             json.put("Overall Engagement Rate ", engagementRate);
             json.put("Engagement Rate Per Month ", engagementPerMonth);
             json.put("Engagement Rate Per Year ", engagementPerYear);

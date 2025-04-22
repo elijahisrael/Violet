@@ -1,17 +1,67 @@
 {
-    "followers": 1,
-    "following": 2,
-    "likes": 0,
+    "followers": 74,
+    "following": 696,
+    "likes": 84,
     "comments": 0,
-    "postDates": [],
-    "posts": 0,
-    "engagementRate": 0.0,
-    "engagementPerMonth": {},
-    "engagementPerYear": {},
-    "postsPerMonth": {},
-    "postsPerYear": {},
-    "likesPerMonth": {},
-    "likesPerYear": {},
-    "commentsPerMonth": {},
-    "commentsPerYear": {}
+    "postDates": [
+        1521570674,
+        1442959789,
+        1430687934,
+        1406151587,
+        1405362427,
+        1401593279,
+        1401506474,
+        1400617690,
+        1400616635
+    ],
+    "posts": 9,
+    "engagementRate": 12.61,
+    "engagementPerMonth": {
+        "2018-03": 14.86,
+        "2015-09": 9.46,
+        "2015-05": 14.86,
+        "2014-07": 14.19,
+        "2014-05": 11.49
+    },
+    "engagementPerYear": {
+        "2018": 14.86,
+        "2015": 12.16,
+        "2014": 12.39
+    },
+    "postsPerMonth": {
+        "2018-03": 1,
+        "2015-09": 1,
+        "2015-05": 1,
+        "2014-07": 2,
+        "2014-05": 4
+    },
+    "postsPerYear": {
+        "2018": 1,
+        "2015": 2,
+        "2014": 6
+    },
+    "likesPerMonth": {
+        "2018-03": 11,
+        "2015-09": 7,
+        "2015-05": 11,
+        "2014-07": 21,
+        "2014-05": 34
+    },
+    "likesPerYear": {
+        "2018": 11,
+        "2015": 18,
+        "2014": 55
+    },
+    "commentsPerMonth": {
+        "2018-03": 0,
+        "2015-09": 0,
+        "2015-05": 0,
+        "2014-07": 0,
+        "2014-05": 0
+    },
+    "commentsPerYear": {
+        "2018": 0,
+        "2015": 0,
+        "2014": 0
+    }
 }

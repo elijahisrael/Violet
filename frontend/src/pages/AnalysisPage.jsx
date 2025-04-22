@@ -30,7 +30,7 @@ export default function AnalysisPage() {
     { label: "Total Comments:", value: hasPosts ? summary["Total Comments "]: "N/A" },
     { label: "Average Likes:", value: hasPosts ? summary["Average Likes per Post "]: "N/A" },
     { label: "Average Comments:", value: hasPosts ? summary["Average Comments per Post "]: "N/A" },
-    { label: "Inactive Followers:", value: hasPosts ? summary["Inactive Followers "]: "N/A" },
+    { label: "Days Since Last Post:", value: hasPosts ? summary["Days Since Last Post "]: "N/A" },
     { label: "Longest Inactive Streak:", value: hasPosts ? summary["Inactive Streak "] + " days": "N/A" },
     
   ];
@@ -145,7 +145,7 @@ export default function AnalysisPage() {
             </LineChart>
           </div>
 
-          {/* Engagement */}
+          {/* Engagement Rate */}
           <div className="text-center w-[520px]">
             <h2 className="text-2xl font-mono font-semibold text-violet-color mb-4">Engagement Rate</h2>
             <p className="text-sm font-mono font-semibold text-violet-color mb-4">
@@ -165,21 +165,6 @@ export default function AnalysisPage() {
               <Bar dataKey="posts" barSize={40} fill="#413ea0" />
               <Line type="monotone" dataKey="likes" stroke="#82ca9d" fill="#82ca9d" />
             </ComposedChart>
-          </div>
-
-          {/* Pie Chart */}
-          <div className="w-[520px]">
-            <h2 className="p-4 text-center text-2xl font-mono font-semibold text-violet-color mb-4">Active vs Inactive Followers</h2>
-            <PieChart width={500} height={300}>
-              <Pie
-                data={[
-                  { name: "Active", value: Math.min(summary["Total Likes on Posts "], summary["Total Followers "]), fill: "#413ea0" },
-                  { name: "Inactive", value: summary["Inactive Followers "], fill: "#8888f8" },
-                ]}
-                cx="50%" cy="50%" outerRadius={80} label
-              />
-              <Tooltip />
-            </PieChart>
           </div>
         </div>
       ) : (
