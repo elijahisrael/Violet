@@ -40,6 +40,12 @@ export default function HomePage() {
                 setCode("");
                 alert("SMS 2FA is not supported. Please use the app for 2FA.")
             } 
+            else if (data.status === "challenge_required") {
+                setLoading(false);
+                setStep(1);
+                setCode("");
+                alert("Challenge required. Please check your Instagram account for any security challenges.");
+            }        
             else {
                 setLoading(false);
                 alert(data.error || "Login failed");
