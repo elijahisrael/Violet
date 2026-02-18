@@ -1,3 +1,7 @@
+# Violet
+
+Instagram Analytics app that tracks a users post, likes, comments, shares, saves, followers, and following. Making the data easily digestible for the average user.
+
 Requirements:
 cd backend
 pip install flask
